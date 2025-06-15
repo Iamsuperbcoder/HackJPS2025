@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ProBridge AI • Log in</title>
+
+<!-- Google Font & Icons -->
+<link rel="preconnect" href="https://fonts.gstatic.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+<style>
+  /* ---------- global  ------------------------------------------------------ */
+  :root{
+    --prim:#3b82f6;--prim-dark:#2563eb;
+    --bg:#0f172a; --fg:#f8fafc; --card:#1e293b; --border:#334155;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Inter",system-ui,sans-serif}
+  html,body{height:100%}
+  body{
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    background:var(--bg);color:var(--fg);position:relative;
+  }
+  /* moving aurora */
+  body::before,body::after{
+    content:"";position:absolute;inset:-75vh -75vw;width:250vw;height:250vh;
+    background:linear-gradient(60deg,#0ea5e9,#6366f1,#ec4899,#f59e0b);
+    background-size:400% 400%;opacity:.32;filter:blur(180px);animation:shift 26s ease-in-out infinite alternate;
+    z-index:-2
+  }
+  body::after{animation-direction:alternate-reverse;animation-duration:40s;opacity:.22}
+  @keyframes shift{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+
+  /* ---------- auth card ---------------------------------------------------- */
+  .card{
+    width:100%;max-width:28rem;background:rgba(30,41,59,.86);
+    border:1px solid var(--border);border-radius:1.25rem;padding:2.4rem 2.2rem;
+    display:flex;flex-direction:column;gap:1.4rem;box-shadow:0 22px 50px #00000050;
+    backdrop-filter:blur(14px);
+    animation:rise .8s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes rise{0%{transform:translateY(40px) scale(.95);opacity:0}100%{opacity:1}}
+
+  h1{font-size:1.95rem;font-weight:700;margin-bottom:.2rem;text-align:center}
+  p.lead{font-size:.93rem;opacity:.8;text-align:center;margin-bottom:.8rem}
+
+  /* ---------- floating inputs --------------------------------------------- */
+  .field{position:relative}
+  input{
+    width:100%;padding:1rem .9rem .6rem;border:none;border-radius:.65rem;
+    background:rgba(15,23,42,.55);color:var(--fg);font-size:1rem;
+    outline:none;font-weight:500;border:1px solid var(--border);
+    transition:border .2s,box-shadow .2s;
+  }
+  label{
+    position:absolute;left:.9rem;top:1.05rem;
+    color:#cbd5e1;font-size:.9rem;pointer-events:none;
+    transition:transform .17s ease, color .2s, font-size .17s ease;
+  }
+  input:focus{border-color:var(--prim-dark);box-shadow:0 0 0 3px #3b82f633}
+  input:focus+label,
+  input:not(:placeholder-shown)+label{
+    top:.45rem;font-size:.73rem;color:var(--prim);
+    transform:translateY(-.55rem);
+  }
+
+  /* ---------- button ------------------------------------------------------- */
+  button{
+    all:unset;display:block;width:100%;text-align:center;cursor:pointer;
+    background:var(--prim);color:#fff;font-weight:600;border-radius:.7rem;padding:.8rem 0;
+    transition:background .18s,transform .17s;box-shadow:0 4px 12px #3b82f648
+  }
+  button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+  button:not(:disabled):hover{background:var(--prim-dark);transform:translateY(-1px)}
+
+  /* message */
+  #msg{font-size:.88rem;text-align:center;color:#f87171;min-height:1.2rem}
+
+  /* small link */
+  .alink{text-align:center;font-size:.85rem;margin-top:.4rem}
+  .alink a{color:#94a3b8;text-decoration:none}
+  .alink a:hover{text-decoration:underline;color:#cbd5e1}
+</style>
+
+<body>
+<div class="card">
+  <h1>Welcome back</h1>
+  <p class="lead">Log in to simplify complex documents with ProBridge AI.</p>
+
+  <div class="field">
+    <input id="u" autocomplete="username" placeholder=" " />
+    <label for="u">Username</label>
+  </div>
+
+  <div class="field">
+    <input id="p" type="password" autocomplete="current-password" placeholder=" " />
+    <label for="p">Password</label>
+  </div>
+
+  <button id="sub">Log&nbsp;in</button>
+  <div id="msg"></div>
+  <p class="alink">Need an account? <a href="signup.html">Sign up →</a></p>
+</div>
+
+<script>
+  const $=id=>document.getElementById(id);
+  $('sub').onclick=async()=>{
+    const u=$('u').value.trim(), p=$('p').value.trim();
+    if(!u||!p){$('msg').textContent='Please fill in both fields.';return}
+    $('sub').disabled=true; $('msg').textContent='';
+    const rsp=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:u,password:p})});
+    $('sub').disabled=false;
+    if(rsp.ok){location.href='index.html'}
+    else $('msg').textContent=(await rsp.json()).msg || 'Login failed';
+  };
+  /* tiny tilt on pointer move for delight */
+  document.body.addEventListener('pointermove',e=>{
+    const {innerWidth:w,innerHeight:h}=window, x=(e.clientX-w/2)/(w/2),y=(e.clientY-h/2)/(h/2);
+    document.querySelector('.card').style.transform=`rotateX(${y*4}deg) rotateY(${x*-4}deg)`;
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ProBridge AI</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+    /* ——— styles unchanged ——— */
+    :root{--prim:#3b82f6;--prim-dark:#2563eb;--bg:#0f172a;--fg:#f8fafc;--card:#1e293b;--border:#334155;--rx:#10b981}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:"Inter",system-ui,sans-serif}
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--fg);display:flex;flex-direction:column;align-items:center;padding:3rem 1rem;gap:2rem;overflow-x:hidden;position:relative}
+    body::before{content:"";position:absolute;inset:-50vh -50vw;width:200vw;height:200vh;background:linear-gradient(60deg,#0ea5e9,#6366f1,#ec4899,#f59e0b);background-size:400% 400%;filter:blur(120px);opacity:.3;animation:shift 25s ease infinite;z-index:-1}
+    @keyframes shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    h1{font-size:clamp(1.9rem,4vw,2.6rem);font-weight:700;text-align:center;text-shadow:0 2px 6px #0007}
+    p.subtitle{opacity:.9;text-align:center;max-width:42rem}
+    .card{background:rgba(30,41,59,.82);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:1.25rem;padding:2rem;width:100%;max-width:42rem;display:flex;flex-direction:column;gap:1.6rem;box-shadow:0 20px 40px #0004}
+    .file-drop{display:flex;flex-direction:column;align-items:center;gap:.7rem;border:2px dashed var(--border);padding:1.7rem;border-radius:.75rem;text-align:center;transition:border-color .25s,background .25s}
+    .file-drop.drag{border-color:var(--prim);background:#3b82f611}
+    .file-drop label{cursor:pointer;font-weight:600;color:var(--prim)}
+    .file-drop input{display:none}
+    button{all:unset;display:block;text-align:center;background:var(--prim);color:#fff;font-weight:600;border-radius:.6rem;padding:.7rem 1.4rem;cursor:pointer;transition:.15s;padding-inline:1.4rem;box-shadow:0 4px 12px #3b82f64d}
+    button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+    button:not(:disabled):hover{background:var(--prim-dark);transform:translateY(-1px)}
+    .small-btn{padding:.45rem 1rem;font-size:.9rem}
+    .preview{display:none;flex-direction:column;gap:.5rem}
+    .preview img,.preview embed{width:100%;height:18rem;border:2px solid var(--border);border-radius:.6rem;object-fit:contain}
+    .domain{font-size:.9rem;font-weight:600;text-transform:capitalize;color:var(--prim-dark)}
+    .summaryWrap{display:flex;gap:1rem}
+    .summary,.summaryMirror,.rx-card{background:rgba(15,23,42,.55);border:1px solid var(--border);border-radius:.6rem;padding:1rem;max-height:22rem;overflow:auto;width:100%;line-height:1.6}
+    .summaryMirror{opacity:0;transition:opacity .3s}
+    .rx-card{border-color:var(--rx)} .rx-card h3{color:var(--rx)}
+    .select-wrap{display:flex;flex-direction:column;gap:.4rem}
+    select{appearance:none;width:100%;background:rgba(15,23,42,.5);color:var(--fg);border:1px solid var(--border);padding:.55rem .9rem;border-radius:.55rem;font-weight:600;background-image:url('data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjM2I4MmY2IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGQ9Ik02LjkgOC4yIDEyIDEzLjV2LS4xMmw0LjctNS4xQzE3LjUgNy4xIDE4IDYuNyAxOC43IDcuNGMuOC43Ljg2IDEuOS4xMyAyLjY0TDEyIDE2LjcgMS4xIDEwLjA3Yy0uNzUtLjc3LS43LTEuOTkuMTItMi43Ni44Ni0uOS44MS0uMzcuOC0uMzdaIi8+PC9zdmc+');background-position:calc(100% - .8rem) center;background-repeat:no-repeat}
+    select:focus{outline:none;box-shadow:0 0 0 3px var(--prim-dark)}
+    .langBar{display:none;gap:.4rem;flex-wrap:wrap}
+    .langBar button{padding:.35rem .7rem;font-size:.8rem;flex:1 1 72px;border:1px solid transparent}
+    .langBar button.active{background:var(--prim-dark)}
+    .chat{display:none;flex-direction:column;gap:1rem}
+    .messages{background:rgba(15,23,42,.45);border:1px solid var(--border);border-radius:.6rem;padding:1rem;max-height:18rem;overflow:auto;display:flex;flex-direction:column;gap:.9rem}
+    .messages .user,.messages .ai{max-width:75%;padding:.55rem .9rem;border-radius:1rem;font-size:.95rem;line-height:1.55;box-shadow:0 2px 6px #0004;white-space:pre-wrap}
+    .messages .user{align-self:flex-end;background:linear-gradient(135deg,var(--prim),var(--prim-dark));color:#fff;border-bottom-right-radius:0}
+    .messages .ai{align-self:flex-start;background:#ffffff10;border-bottom-left-radius:0;border-left:3px solid var(--prim-dark)}
+    .messages .mirror{font-size:.85rem;opacity:.75;margin-top:.18rem}
+    .chat-input{display:flex;gap:.6rem;align-items:center}
+    .chat-input input[type=text]{flex:1;background:rgba(15,23,42,.5);border:1px solid var(--border);color:var(--fg);border-radius:.6rem;padding:.6rem .8rem}
+    .chat-input label{cursor:pointer;color:var(--prim);font-size:1.4rem}
+    .chat-input input[type=file]{display:none}
+    .spinner{width:2.4rem;height:2.4rem;border:.3rem solid #ffffff30;border-top-color:var(--prim);border-radius:50%;animation:spin 1s linear infinite;margin:1rem auto 0}@keyframes spin{to{transform:rotate(360deg)}}
+    #quizSetup,#quizArea{display:none;flex-direction:column;gap:1rem;background:rgba(30,41,59,.85);border:1px solid var(--border);border-radius:1rem;padding:1.3rem;margin-top:1rem}
+    #quizArea .q{margin-bottom:1rem}#quizArea .q h4{margin-bottom:.4rem}
+    #quizArea .q .opts{display:flex;flex-direction:column;gap:.25rem;margin-top:.25rem}
+    #quizScore{font-weight:700;margin-top:.8rem}
+    #answerKey{display:none;border-top:1px solid var(--border);padding-top:.65rem;font-size:.95rem;line-height:1.5}
+</style>
+
+<body>
+<h1>ProBridge AI</h1>
+<button onclick="fetch('/logout').then(()=>location.href='login.html')" style="position:absolute;top:1rem;right:1rem;padding:.4rem .9rem">Log&nbsp;out</button>
+
+<p class="subtitle">
+    Upload any complex document and ProBridge AI will transform it into clear insights,
+    interactive chat and quizzes.<br><em>(We’re <u>not</u> medical professionals; always consult a doctor.)</em>
+</p>
+
+<div class="card">
+    <!-- upload -->
+    <div id="drop" class="file-drop">
+        <label for="file">Choose or drop a file here</label>
+        <input id="file" type="file"><small id="fname"></small>
+    </div>
+
+    <!-- reading level -->
+    <div class="select-wrap"><label>Reading level:</label>
+        <select id="lvl">
+            <option value="8">Grade 8</option><option value="10" selected>Grade 10</option>
+            <option value="12">Grade 12</option><option value="16">College</option>
+            <option value="18">Master’s</option><option value="20">PhD</option>
+        </select>
+    </div>
+
+    <div class="preview" id="preview"></div>
+
+    <button id="go" disabled>Analyze</button>
+    <div id="loading" class="spinner" style="display:none"></div>
+
+    <!-- summary -->
+    <div id="result" style="display:none;flex-direction:column;gap:1rem">
+        <span class="domain" id="domain"></span>
+        <div class="langBar" id="langBar"></div>
+        <div class="summaryWrap">
+            <div class="summary" id="summary"></div>
+            <div class="summaryMirror" id="summaryM"></div>
+        </div>
+        <button id="quizBtn" class="small-btn">📝 Make Quiz</button>
+    </div>
+
+    <!-- prescription -->
+    <div id="rxCard" class="rx-card" style="display:none;flex-direction:column;gap:.8rem">
+        <h3>Prescription Details</h3><div id="rxBody"></div>
+        <div class="langBar" id="langBarRx"></div>
+        <button id="quizBtnRx" class="small-btn">📝 Make Quiz</button>
+    </div>
+
+    <!-- quiz setup -->
+    <div id="quizSetup">
+        <div style="display:flex;gap:.8rem">
+            <div style="flex:1"><label>Difficulty:</label>
+                <select id="qDiff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
+            <div style="flex:1"><label># Questions:</label>
+                <select id="qNum"><option>5</option><option selected>8</option><option>10</option></select></div>
+        </div>
+        <button id="genQuiz">Generate Quiz</button>
+    </div>
+
+    <!-- quiz -->
+    <div id="quizArea">
+        <div id="quizQ"></div>
+        <button id="submitQuiz">Submit Quiz</button>
+        <button id="showKey" class="small-btn" style="display:none">Show Answer Key</button>
+        <div id="quizScore"></div><div id="answerKey"></div>
+    </div>
+
+    <!-- chat -->
+    <div class="chat" id="chat">
+        <div class="messages" id="messages"></div>
+        <div class="chat-input">
+            <label for="imgInput">📷</label><input id="imgInput" type="file" accept="image/*">
+            <input id="chatInput" type="text" placeholder="Ask a question…"><button id="sendBtn">Send</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    /* ------------------------------------------------ helper: POST wrapper -- */
+    async function postJson(url, body){
+        const opts = { method:'POST', body };
+        if (typeof body === 'string') opts.headers = {'Content-Type':'application/json'};
+        const rsp = await fetch(url, opts);
+        if(!rsp.ok){
+            const txt = await rsp.text();
+            alert(`Server error ${rsp.status}\n\n${txt}`);
+            throw new Error(txt);
+        }
+        return rsp.json();
+    }
+
+    /* ------------------------------------------------ auth check ------------ */
+    (async()=>{
+        const me = await (await fetch('/whoami')).json();
+        if(!me.user) { location.href='login.html'; return; }
+        document.querySelector('h1').innerHTML =
+            `ProBridge AI <small style="font-size:.6em;">👋 ${me.user}</small>`;
+    })();
+
+    /* ------------------------------------------------ DOM refs -------------- */
+    const $ = id=>document.getElementById(id);
+    const drop=$('drop'),fileInput=$('file'),fname=$('fname'),preview=$('preview');
+    const goBtn=$('go'),loading=$('loading');
+    const result=$('result'),summary=$('summary'),summaryM=$('summaryM'),domainTag=$('domain');
+    const rxCard=$('rxCard'),rxBody=$('rxBody');
+    const langBar=$('langBar'),langBarRx=$('langBarRx'),lvl=$('lvl');
+    const quizBtn=$('quizBtn'),quizBtnRx=$('quizBtnRx'),quizSetup=$('quizSetup'),quizArea=$('quizArea');
+    const qDiff=$('qDiff'),qNum=$('qNum'),genQuiz=$('genQuiz'),quizQ=$('quizQ');
+    const submitQuiz=$('submitQuiz'),quizScore=$('quizScore'),showKey=$('showKey'),answerKey=$('answerKey');
+    const messages=$('messages'),chatWrap=$('chat'),chatInput=$('chatInput'),sendBtn=$('sendBtn'),imgInput=$('imgInput');
+
+    let currentSummary="",mirrorLang="",quizData=[];
+
+    /* ------------------------------------------------ misc helpers ---------- */
+    const hide   = (...els)=>els.forEach(el=>el&&(el.style.display='none'));
+    const scrollTo = el=>setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'center'}),60);
+    const langs=[["Original",""],["Español","es"],["Français","fr"],["Deutsch","de"],["العربية","ar"],
+        ["中文","zh"],["हिन्दी","hi"],["Português","pt"],["Русский","ru"],["日本語","ja"]];
+
+    /* ------------------------------------------------ language bar ----------- */
+    function buildLangBar(bar){
+        bar.innerHTML="";
+        langs.forEach(([n,c])=>{
+            const b=document.createElement('button');
+            b.textContent=n;
+            b.onclick=()=>selectLang(c,bar);
+            bar.appendChild(b);
+        });
+    }
+    buildLangBar(langBar); buildLangBar(langBarRx);
+
+    function selectLang(code,bar){
+        mirrorLang=code;
+        bar.querySelectorAll('button').forEach(b=>
+            b.classList.toggle('active', b.textContent===langs.find(l=>l[1]===code)[0]));
+        updateSummaryMirror();
+        translateQuizUI();
+    }
+
+    /* ------------------------------------------------ drag & drop / preview - */
+    ['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{
+        ev.preventDefault(); drop.classList.add('drag');
+    }));
+    ['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{
+        ev.preventDefault(); drop.classList.remove('drag');
+    }));
+    drop.addEventListener('drop',e=>{
+        fileInput.files=e.dataTransfer.files;
+        onFile();
+    });
+    fileInput.onchange=onFile;
+
+    function onFile(){
+        const f=fileInput.files[0];
+        goBtn.disabled=!f;
+        if(!f){ preview.style.display='none'; fname.textContent=''; return; }
+        fname.textContent=f.name;
+        preview.innerHTML=''; preview.style.display='flex';
+        const url=URL.createObjectURL(f);
+        if(f.type.startsWith('image/')){
+            const img=new Image(); img.src=url; preview.appendChild(img);
+        }else{
+            const emb=document.createElement('embed');
+            emb.src=url; emb.type=f.type; preview.appendChild(emb);
+        }
+    }
+
+    /* ------------------------------------------------ analyze --------------- */
+    goBtn.onclick=async()=>{
+        const f=fileInput.files[0]; if(!f) return;
+        hide(quizSetup,quizArea); showKey.style.display='none'; answerKey.innerHTML='';
+        [result,rxCard,chatWrap].forEach(el=>el.style.display='none'); loading.style.display='block';
+
+        const fd=new FormData(); fd.append('file',f); fd.append('level',lvl.value);
+        const ep=f.type.startsWith('image/')?'/prescription':'/summarize';
+        const d=await postJson(ep,fd);
+
+        if(ep==='/prescription'){
+            rxCard.style.display='flex';
+            rxBody.innerHTML=marked.parse(d.rx);
+            currentSummary=d.rx;
+            langBarRx.style.display='flex';
+            quizBtnRx.style.display='block';
+        }else{
+            result.style.display='flex';
+            domainTag.textContent=`Detected domain: ${d.domain}`;
+            summary.innerHTML=marked.parse(d.summary);
+            currentSummary=d.summary;
+            langBar.style.display='flex';
+            quizBtn.style.display='block';
+        }
+        chatWrap.style.display='flex';
+        loading.style.display='none';
+        mirrorLang=""; summaryM.innerHTML=""; summaryM.style.opacity=0;
+    };
+
+    /* ------------------------------------------------ summary mirror -------- */
+    async function updateSummaryMirror(){
+        if(!mirrorLang){
+            summaryM.style.opacity=0; summaryM.innerHTML=''; return;
+        }
+        summaryM.style.opacity=0; summaryM.innerHTML='Translating…';
+        const r=await postJson('/translate', JSON.stringify({text:currentSummary,lang:mirrorLang}));
+        summaryM.innerHTML=marked.parse(r.translated);
+        summaryM.style.opacity=1;
+    }
+
+    /* ------------------------------------------------ quiz ------------------ */
+    quizBtn.onclick = quizBtnRx.onclick = ()=>{
+        hide(quizArea);
+        quizSetup.style.display='flex';
+        scrollTo(quizSetup);
+    };
+
+    genQuiz.onclick = async()=>{
+        genQuiz.disabled=true; genQuiz.textContent='Generating…';
+        const r=await postJson('/make_quiz',
+            JSON.stringify({summary:currentSummary,difficulty:qDiff.value,num:+qNum.value}));
+        quizData=r;
+        genQuiz.disabled=false; genQuiz.textContent='Generate Quiz';
+        if(!quizData.length){ alert('Quiz generation failed'); return; }
+        renderQuiz();
+        quizSetup.style.display='none';
+        quizArea.style.display='flex';
+        scrollTo(quizArea);
+        translateQuizUI();
+    };
+
+    function renderQuiz(){
+        quizQ.innerHTML='';
+        quizData.forEach((q,i)=>{
+            const div=document.createElement('div');
+            div.className='q';
+            div.innerHTML=`<h4>${i+1}. ${q.question}</h4>`;
+            if(q.type==='mcq'){
+                const o=document.createElement('div'); o.className='opts';
+                q.options.forEach(opt=>{
+                    o.innerHTML+=`<label><input type="radio" name="q${i}" value="${opt}"> ${opt}</label>`;
+                });
+                div.appendChild(o);
+            }else{
+                div.innerHTML+=
+                    `<textarea rows="2" style="width:100%;background:#0001;color:var(--fg);
+                        border:1px solid var(--border);border-radius:.4rem;padding:.4rem"></textarea>`;
+            }
+            quizQ.appendChild(div);
+        });
+    }
+
+    submitQuiz.onclick=()=>{
+        let correct=0;
+        quizData.forEach((q,i)=>{
+            if(q.type==='mcq'){
+                const sel=[...document.querySelectorAll(`input[name=q${i}]:checked`)][0];
+                if(sel && sel.value.trim().toLowerCase()===q.answer.trim().toLowerCase()) correct++;
+            }else{
+                const ans=quizQ.children[i].querySelector('textarea').value;
+                if(ans.trim().toLowerCase()===q.answer.trim().toLowerCase()) correct++;
+            }
+        });
+        quizScore.textContent=`You got ${correct}/${quizData.length}.`;
+        showKey.style.display='block';
+    };
+    showKey.onclick=()=>{
+        if(answerKey.style.display==='block'){
+            answerKey.style.display='none';
+            showKey.textContent='Show Answer Key';
+        }else{
+            answerKey.innerHTML=quizData.map((q,i)=>`<p><strong>${i+1}.</strong> ${q.answer}</p>`).join('');
+            answerKey.style.display='block';
+            showKey.textContent='Hide Answer Key';
+        }
+    };
+
+    /* ------------------------------------------------ quiz translation ------ */
+    async function translateQuizUI(){
+        if(!mirrorLang || !quizData.length || quizArea.style.display==='none') return;
+        const bulk = quizData.map((q,i)=>{
+            let line=`Q${i+1}. ${q.question}`;
+            if(q.type==='mcq') line += " | " + q.options.join(" || ");
+            return line;
+        }).join("\n");
+        const tr = await postJson('/translate', JSON.stringify({text:bulk,lang:mirrorLang}));
+        const lines = tr.translated.split('\n');
+
+        lines.forEach((ln,i)=>{
+            const parts=ln.split(' | ');
+            quizQ.children[i].querySelector('h4').innerHTML=parts[0].replace(/^Q\d+\. /,'');
+            if(quizData[i].type==='mcq' && parts[1]){
+                const opts=parts[1].split(' || ');
+                [...quizQ.children[i].querySelectorAll('label')].forEach((lab,j)=>{
+                    lab.lastChild.textContent=' '+opts[j];
+                    lab.querySelector('input').value=opts[j];
+                });
+            }
+        });
+
+        if(answerKey.style.display==='block'){
+            const keyText = quizData.map((q,i)=>`${i+1}. ${q.answer}`).join('\n');
+            const keys = (await postJson('/translate',
+                JSON.stringify({text:keyText,lang:mirrorLang}))).translated.split('\n');
+            answerKey.innerHTML = keys.map(k=>{
+                const [num,txt]=k.split('. ');
+                return `<p><strong>${num}.</strong> ${txt}</p>`;
+            }).join('');
+        }
+    }
+
+    /* ------------------------------------------------ chat ------------------ */
+    function addMsg(role,txt){
+        const d=document.createElement('div');
+        d.className=role;
+        d.innerHTML=marked.parseInline(txt);
+        messages.appendChild(d);
+        messages.scrollTop=messages.scrollHeight;
+        if(mirrorLang) mirrorChat(txt,d);
+    }
+
+    async function mirrorChat(txt,node){
+        const tr=await postJson('/translate', JSON.stringify({text:txt,lang:mirrorLang}));
+        const div=document.createElement('div');
+        div.className='mirror';
+        div.textContent=tr.translated;
+        node.appendChild(div);
+    }
+
+    sendBtn.onclick=async()=>{
+        const q=chatInput.value.trim();
+        if(!q) return;
+        addMsg('user',q);
+        chatInput.value='';
+        sendBtn.disabled=true;
+        const r=await postJson('/chat', JSON.stringify({question:q,context:currentSummary}));
+        addMsg('ai',r.answer);
+        sendBtn.disabled=false;
+    };
+    chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendBtn.click(); });
+</script>
+</body>
+</html>
